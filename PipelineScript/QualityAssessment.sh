@@ -201,6 +201,30 @@ then
     cat ../03.GroupAndRefine/StatFiles/${name}.DNA.RDP.cluster.FragCount.stat >> ${name}_final_stat.tsv
     echo -e "RNA_complex\t${RNA_cluster}" >> ${name}_final_stat.tsv
     cat ../03.GroupAndRefine/StatFiles/${name}.RNA.RDP.cluster.FragCount.stat >> ${name}_final_stat.tsv
+elif [[ ${expe_type} == "scair" ]]
+then
+    Total_read_pairs=$(grep "Total reads" ../01.BarcodeIden/${name}.stat | awk -F ":" '{print $2}')
+    Read_pairs_with_full_barcodes=$(grep -F 'Fully barcoded' ../01.BarcodeIden/${name}.stat | awk -F ":" '{sum+=$2} END {print sum}')
+    Fully_barcode_rate=$(echo "scale=6; ${Read_pairs_with_full_barcodes}/${Total_read_pairs}" | bc)
+    CellCountAtFastq=$(grep CELL ../01.BarcodeIden/BarcodeIdentification_statistic.txt | awk -F ":" '{print $2}')
+    TotalFragment=$(grep Read ../03.GroupAndRefine/${name}.ParsePairs.stat | awk -F ":" '{print $2}')
+    TotalPairs=$(grep Pair ../03.GroupAndRefine/${name}.ParsePairs.stat | awk -F ":" '{print $2}')
+    TotalSelf=$(grep Self ../03.GroupAndRefine/${name}.ParsePairs.stat | awk -F ":" '{print $2}')
+    DupPair=$(grep DuplicatePe ../03.GroupAndRefine/${name}.ParsePairs.stat | awk -F ":" '{print $2}')
+    DupSelf=$(grep DuplicateSe ../03.GroupAndRefine/${name}.ParsePairs.stat | awk -F ":" '{print $2}')
+    DuplicatedPairAndSelf=$(grep Dup ../03.GroupAndRefine/${name}.ParsePairs.stat | awk '{sum+=$2} END{print sum}')
+    DupRate=$(echo -e "scale=6; ${DuplicatedPairAndSelf}/${TotalFragment}" | bc)
+
+    echo -e "Total_read_pairs\t${Total_read_pairs}" > ${name}_final_stat.tsv
+    echo -e "Read_pairs_with_full_barcodes\t${Read_pairs_with_full_barcodes}" >> ${name}_final_stat.tsv
+    echo -e "Fully_barcode_rate\t${Fully_barcode_rate}" >> ${name}_final_stat.tsv
+    echo -e "Cell_count_at_fastq\t${CellCountAtFastq}" >> ${name}_final_stat.tsv
+    echo -e "Total_fragments\t${TotalFragment}" >> ${name}_final_stat.tsv
+    echo -e "Total_pairs\t${TotalPairs}" >> ${name}_final_stat.tsv
+    echo -e "Total_self_liagte\t${TotalSelf}" >> ${name}_final_stat.tsv
+    echo -e "Duplicated_pairs\t${DupPair}" >> ${name}_final_stat.tsv
+    echo -e "Duplicated_self_ligate\t${DupSelf}" >> ${name}_final_stat.tsv
+    echo -e "Duplicate_rate\t${DupRate}" >> ${name}_final_stat.tsv
 fi
 
 cd ..

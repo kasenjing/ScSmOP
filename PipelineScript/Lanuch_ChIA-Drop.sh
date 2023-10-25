@@ -31,7 +31,7 @@ ChIADrop_CONFIG="-"
 BWA_REF_GENOME="REF_OF_BWA"
 GENOME_SIZE_FILE="dm3.size.txt"
 
-BARP_DIR="REF_OF_ScSmOP"
+BARP_DIR="/mnt/d/ScSmOP-master"
 
 while getopts x:c:t:p:n:@:d:r:g:h flag
 do

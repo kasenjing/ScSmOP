@@ -17,7 +17,7 @@ if [[ ! -z $TBARP_DIR ]]
 then
     BARP_DIR=$TBARP_DIR
 else
-    BARP_DIR="REF_OF_ScSmOP"
+    BARP_DIR="/mnt/d/ScSmOP-master"
 fi
 
 echo "Start: $(date)" > TimeStamp

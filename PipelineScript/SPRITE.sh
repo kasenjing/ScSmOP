@@ -13,7 +13,7 @@ do
     (( cnt++ ))
 done
 
-BARP_DIR="REF_OF_ScSmOP"
+BARP_DIR="/mnt/d/ScSmOP-master"
 
 echo "Start: $(date)" > TimeStamp
 

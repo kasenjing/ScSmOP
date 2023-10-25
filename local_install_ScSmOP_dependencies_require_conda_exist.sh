@@ -14,7 +14,7 @@ then
         if [[ $REPLY == "yes" ]]
         then
             ${OriConda} remove -n ScSmOP --all -y
-            ${OriConda} create -n ScSmOP python -c conda-forge -y
+            ${OriConda} create -n ScSmOP python=3.10 -c conda-forge -y
             source ${OriActivate} ScSmOP
         elif [[ $REPLY == "no" ]]
         then
@@ -26,7 +26,7 @@ then
             if [[ $REPLY == "yes" ]]
             then
                 ${OriConda} remove -n ScSmOP --all -y
-                ${OriConda} create -n ScSmOP python -c conda-forge -y
+                ${OriConda} create -n ScSmOP python=3.10 -c conda-forge -y
                 source ${OriActivate} ScSmOP
             elif [[ $REPLY == "no" ]]
             then
@@ -38,7 +38,7 @@ then
             fi
         fi
     else
-        ${OriConda} create -n ScSmOP python -c conda-forge -y
+        ${OriConda} create -n ScSmOP python=3.10 -c conda-forge -y
         source ${OriActivate} ScSmOP
     fi
 fi
@@ -154,6 +154,12 @@ ${ScSmOPCondaDir}/bin/pip install pandas
 
 ${ScSmOPCondaDir}/bin/pip install cutadapt
 ln -s ${ScSmOPCondaDir}/bin/cutadapt cutadapt
+
+${ScSmOPCondaDir}/bin/pip install pairtools
+ln -s ${ScSmOPCondaDir}/bin/pairtools pairtools
+
+PIGZDIR=$( which pigz )
+ln -s ${PIGZDIR} pigz
 
 # install bwa if no bwa found in PATH
 conda install bwa -n ScSmOP -y 

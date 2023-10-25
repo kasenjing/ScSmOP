@@ -29,7 +29,7 @@ name="-"
 num_thread=1
 config="-"
 
-while getopts x:c:t:p:n:@:d:r:g:h flag
+while getopts x:c:t:p:n:@:d:r:b:g:s:h flag
 do
     case "${flag}" in 
         c)  config=${OPTARG};;
@@ -40,7 +40,9 @@ do
         r)  rna_alignment=${OPTARG};;
         @)  num_thread=${OPTARG};;
         g)  star_ref=${OPTARG};;
+        b)  bwa_ref=${OPTARG};;
         x)  genomesize=${OPTARG};;
+        s)  self_ligate=${OPTARG};;
         ? | h) print_help
             exit 1;;
     esac
@@ -306,6 +308,35 @@ then
     ${pipe_dir}/Tools/python3 ${pipe_dir}/PythonScript/RemovePredominantlyDoublets.py ../${name}.RDP.cluster ../raw_matrix/filtered_cells.tsv
     ${pipe_dir}/Tools/python3 ${pipe_dir}/PythonScript/FilterCellForATAC.py ../${name}.PeakCellCount.bed Cell
     cd ..
+    if [[ $? != 0 ]]
+    then
+        FinishSuccess=0
+    fi
+elif [[ ${expe_type} == "scairdna" ]]
+then
+    echo "Extract interaction pairs"
+    echo -e "${pipe_dir}/Tools/pairtools parse -c ${bwa_ref} -o ${name}.All.pairs.gz --cmd-out ${pipe_dir}/Tools/pigz --add-columns algn_ref_span ${dna_alignment} --min-mapq 30"
+    ${pipe_dir}/Tools/pairtools parse -c ${bwa_ref} -o ${name}.All.pairs.gz --cmd-out ${pipe_dir}/Tools/pigz --add-columns algn_ref_span --min-mapq 30  ${dna_alignment} 
+    echo "Parsing interaction pairs to ligation pairs"
+    ${pipe_dir}/Tools/python3 ${pipe_dir}/PythonScript/ParsePairs.py -i ${name}.All.pairs.gz -s ${self_ligate} -3 500 -5 0 -o ${name}
+    zcat ${name}.Pairs.gz | awk '{if($0 ~ /^#/) {print} else {if(($9 == "pair" || $9=="self") && $15 != "dup") print}}' | pigz > ${name}.Dedup.Frags.gz
+    zcat ${name}.Dedup.Frags.gz | awk '{if($0 ~ /^#/) {print} else {if($9 == "pair") print}}' | pigz > ${name}.Dedup.Pairs.gz
+    ${pipe_dir}/Tools/pairtools sort ${name}.Dedup.Pairs.gz -o ${name}.Dedup.Pairs.Sorted.gz
+    zcat ${name}.Dedup.Frags.gz | awk '{if(!($0 ~ /^#/)) {print $14}}' | sort | uniq -c | awk '{OFS="\t"; print "chr1","111111", "112233", $2,$1}' > ${name}.PeakCellCount.bed
+    echo "Calling cells"
+    ${pipe_dir}/Tools/python3 ${pipe_dir}/PythonScript/GenerateMatrixForHiC.py -i ${name}.PeakCellCount.bed
+    mkdir raw 
+    mv barcodes.tsv features.tsv matrix.mtx raw
+    ${pipe_dir}/Tools/STAR --runMode soloCellFiltering raw ${name}.Kneepoint
+    mkdir filtered
+    mv ${name}.Kneepointbarcodes.tsv ${name}.Kneepointfeatures.tsv ${name}.Kneepointmatrix.mtx filtered
+    # ${pipe_dir}/Tools/Rscript ${pipe_dir}/Rscript/PlotCountCell.R  raw/matrix.mtx raw/features.tsv raw/barcodes.tsv filtered/${name}.Kneepointmatrix.mtx filtered/${name}.Kneepointfeatures.tsv filtered/${name}.Kneepointbarcodes.tsv
+	echo -e "Generating coverage..."
+    ${pipe_dir}/Tools/samtools view -F 1024 -@ 16 --tag LT:P --tag LT:S ${name}.Pairs.bam -o ${name}.PS.Dedup.bam
+	${pipe_dir}/Tools/samtools sort -@ 16 ${name}.PS.Dedup.bam -o ${name}.PS.Dedup.Sorted.bam
+	${pipe_dir}/Tools/samtools index ${name}.PS.Dedup.Sorted.bam
+    ${pipe_dir}/Tools/bedtools genomecov -bg -ibam ${name}.PS.Dedup.Sorted.bam > ${name}.PS.Dedup.bedgraph
+    java -jar /mnt/f/scChIA/ScSmOP/ScSmOP/Tools/juicer_tools_1.19.01.jar pre ${name}.Dedup.Pairs.Sorted.gz ${name}.Dedup.Pairs.hic ${genomesize}
     if [[ $? != 0 ]]
     then
         FinishSuccess=0

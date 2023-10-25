@@ -22,7 +22,7 @@ which conda
 CondaDir="$(pwd)/miniconda3/"
 source miniconda3/bin/activate
 conda config --add channels conda-forge
-conda create -n ScSmOP python -y -c conda-forge
+conda create -n ScSmOP python=3.10 -y -c conda-forge
 ScSmOPCondaDir="$(pwd)/miniconda3/envs/ScSmOP"
 
 source ${CondaDir}/bin/activate ScSmOP
@@ -65,6 +65,7 @@ cd ../..
 mv STARM/source/STAR .
 rm -r STARM
 
+
 # install samtools if no samtools found in PATH
 conda install samtools -n ScSmOP -y 
 ln -s ${ScSmOPCondaDir}/bin/samtools samtools 
@@ -81,6 +82,12 @@ ${ScSmOPCondaDir}/bin/pip install pandas
 
 ${ScSmOPCondaDir}/bin/pip install cutadapt
 ln -s ${ScSmOPCondaDir}/bin/cutadapt cutadapt
+
+${ScSmOPCondaDir}/bin/pip install pairtools
+ln -s ${ScSmOPCondaDir}/bin/pairtools pairtools
+
+PIGZDIR=$( which pigz )
+ln -s ${PIGZDIR} pigz
 
 # install bwa if no bwa found in PATH
 conda install bwa -n ScSmOP -y 

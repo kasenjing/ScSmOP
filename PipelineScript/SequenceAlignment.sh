@@ -4,7 +4,7 @@ start=$SECOND
 print_help()
 {
     echo ''
-	echo -e "Usage: $0 -t [STR] -n [STR] -p [DIR] -d [STR] -r [STR] -1 [STR] -2 [STR] -@ [INT] -f [DIR] -g [DIR] -k [STR]"
+	echo -e "Usage: $0 -t [STR] -n [STR] -p [DIR] -d [STR] -r [STR] -1 [STR] -2 [STR] -@ [INT] -f [DIR] -g [DIR] -k [STR] -c -s"
     echo -e "\t-t Experiment type: sprite, scsprite, rdsprite, chiadrop, scrna, scatac, scrnawscatac"
 	echo -e "\t-n Library name"
     echo -e "\t-p Pipeline processing tool directory"
@@ -15,7 +15,9 @@ print_help()
     echo -e "\t-f BWA reference genome directory"
     echo -e "\t-g STAR reference genome directory"
     echo -e "\t-k Treat NDNR file as DNA or RNA.[DNA]"
+    echo -e "\t-c HiC alignment."
 	echo -e "\t-@ Thread to use"
+    echo -e "\t-m BARP type."
     echo -e "\t-s single-cell rna-seq"
 }
 
@@ -35,9 +37,12 @@ read_2_list="-"
 num_thread=1
 dna_aligner=${bwa_aligner}
 rna_aligner=${star_aligner}
+barp_type="CELL"
 scrna_flag=0
+hic_flag=0
 
-while getopts t:p:n:f:@:1:2:g:d:r:k:sh flag
+
+while getopts t:p:n:f:@:1:2:g:d:r:k:m:sch flag
 do
     case "${flag}" in 
         t)  expe_type=${OPTARG};;
@@ -51,7 +56,9 @@ do
         f)  bwa_ref=${OPTARG};;
         k)  NDNR_AS=${OPTARG};;
         g)  star_ref=${OPTARG};;
+        m)  barp_type=${OPTARG};;
         s)  scrna_flag=1;;
+        c)  hic_flag=1;;
         ? | h) print_help
             exit 1;;
     esac
@@ -114,6 +121,39 @@ function bwa_map
         echo "bwa mapping pair end read."
         echo "${pipe_dir}/Tools/${bwa_aligner} mem -t ${num_thread} -o ${name}_DNA.bam ${bwa_ref} ${FileArray[0]} ${FileArray[1]}"
         ${pipe_dir}/Tools/${bwa_aligner} mem -t ${num_thread} -o ${name}_DNA.bam ${bwa_ref} ${FileArray[0]} ${FileArray[1]}
+        if [[ $? != 0 ]]
+        then
+            FinishSuccess=0
+        fi
+    else
+        echo "Only single end or pair end read is supported."
+        exit 2
+    fi
+}
+
+function hic_map
+{
+    local FileArray
+    FileArray=($(echo "$@"))
+    if [[ ! -f ${bwa_ref} ]]
+    then
+        echo "BWA reference did not specified."
+        exit 1
+    fi
+    if [[ ${#FileArray[@]} == 1 ]]
+    then
+        echo "bwa mapping single end read."
+        echo "${pipe_dir}/Tools/${bwa_aligner} mem -SP5M ${bwa_ref} ${FileArray} -o ${name}_DNA.bam -t ${num_thread} "
+        ${pipe_dir}/Tools/${bwa_aligner} mem -SP5M ${bwa_ref} ${FileArray} -o ${name}_DNA.bam -t ${num_thread} 
+        if [[ $? != 0 ]]
+        then
+            FinishSuccess=0
+        fi
+    elif [[ ${#FileArray[@]} == 2 ]]
+    then
+        echo "bwa mapping pair end read."
+        echo "${pipe_dir}/Tools/${bwa_aligner} mem -SP5M -t ${num_thread} -o ${name}_DNA.bam ${bwa_ref} ${FileArray[0]} ${FileArray[1]}"
+        ${pipe_dir}/Tools/${bwa_aligner} mem -SP5M -t ${num_thread} -o ${name}_DNA.bam ${bwa_ref} ${FileArray[0]} ${FileArray[1]}
         if [[ $? != 0 ]]
         then
             FinishSuccess=0
@@ -189,7 +229,7 @@ function star_map
         ${pipe_dir}/Tools/${rna_aligner} --readFilesIn ${read1_file} ${read2_file}\
             --genomeDir ${star_ref} \
             --soloType BARP \
-            --soloBarpIdentifier CELL \
+            --soloBarpIdentifier ${barp_type} \
             --soloCBwhitelist None \
             --runThreadN ${num_thread} \
             --soloUMIfiltering MultiGeneUMI_CR \
@@ -206,7 +246,6 @@ function star_map
         echo "No mapping.\n"
     fi
 }
-
 
 if [[ ${read_1_list} == "-" ]]
 then
@@ -284,10 +323,17 @@ do
     if [[ ${scrna_flag} == 1 ]]
     then
         star_map "SCRNA"
+    elif [[ ${hic_flag} == 1 ]]
+    then
+        if [[ ${pair_end_mode} == 1 ]]
+        then
+            hic_map ${read1_file} ${read2_file}
+        else
+            hic_map ${read1_file}
+        fi
     else
         if [[ ( (${read1_file} =~ DNA) || ( (${read1_file} =~ NDNR) && (${NDNR_AS} == "DNA" || ${NDNR_AS} == "dna" ) ) ) && ( (${dna_aligner} == "bwa") || (${dna_aligner} == "BWA") ) ]]
         then
-
             if [[ ${pair_end_mode} == 1 ]]
             then
                 bwa_map ${read1_file} ${read2_file}

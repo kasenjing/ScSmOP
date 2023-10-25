@@ -4,7 +4,7 @@ print_help()
 {
     echo ''
 	echo -e "Usage: $0 [options] -t [STR] -n [STR] -1 [FILE] -2 [FILE] -r [DIR]"
-    echo -e "\t-t Experiment type: sprite, scsprite, rdsprite, chiadrop, scrna_10x_v3, scrna_10x_v2, dropseq, scatac_10x_v1, scarc_10x_v1."
+    echo -e "\t-t Experiment type: sprite, scsprite, rdsprite, chiadrop, scrna_10x_v3, scrna_10x_v2, dropseq, scatac_10x_v1, scarc_10x_v1, scair."
 	echo -e "\t-n Library name."
     echo -e "\t-1 Read 1 FASTQ."
     echo -e "\t-2 Read 2 FASTQ."
@@ -16,9 +16,10 @@ print_help()
     echo -e "\t-c Custom configuration file."
     echo -e "\t-w Custom whitelist."
 	echo -e "\t-@ Thread to use."
+    echo -e "\t-l self ligation length."
     echo -e "\t-p Custom ScSmOP directory."
     echo -e "\t-s Chromosome size file, need by chiadrop, scatac_10x_v1, scarc_10x_v1."
-    echo -e "\t-s Processing scARC-seq, specify ATAC FASTQ through -1 ATAC R1 -2 ATAC R2 -3 ATAC R3 -4 GEX R1 -5 GEX R2.\n"
+    echo -e "\t   Processing scARC-seq, specify ATAC FASTQ through -1 ATAC R1 -2 ATAC R2 -3 ATAC R3 -4 GEX R1 -5 GEX R2.\n"
     echo -e "Universal pipeline for multi-omics data process: <https://github.com/ZhengmzLab/ScSmOP/wiki>.\n"
 }
 
@@ -36,10 +37,11 @@ read_4_str="-"
 custom_config="-"
 custom_whitelist="-"
 chrom_size="-"
+self_ligate="-"
 
-barp_dir="REF_OF_ScSmOP"
+barp_dir="/mnt/d/ScSmOP-master"
 
-while getopts t:n:1:2:3:4:5:r:b:c:w:@:p:s:h flag
+while getopts t:n:1:2:3:4:5:r:b:c:w:@:p:s:l:h flag
 do
     case "${flag}" in 
         t)  expe_type=${OPTARG};;
@@ -56,6 +58,7 @@ do
         @)  thread=${OPTARG};;
         p)  barp_dir=${OPTARG};;
         s)  chrom_size=${OPTARG};;
+        l)  self_ligate=${OPTARG};;
         ? | h) print_help
             exit 1;;
     esac
@@ -189,6 +192,19 @@ then
     gex_config="10x_scarc-rna_config.json"
     checkChromSize ${expe_type}
     ${barp_dir}/PipelineScript/scarc.sh ${name} "${ATAC_Input_FILES}" "${GEX_Input_FILES}" ${thread} ${atac_config} ${gex_config} ${star_ref} ${bwa_ref} ${chrom_size} ${barp_dir}
+elif [[ ${expe_type} == "scair" ]]
+then
+    if [[ ${self_ligate} == "-" ]]; then echo "scair-seq require self-ligation specified. Recommand value: dm3 3,000; hg38 8,000."; exit 1; fi
+    if [[ ${custom_whitelist} != "-" ]]; then echo "scair-seq do not support custom whitelist in this version, please refer to DIY."; fi
+    checkSTARRef ${expe_type}
+    checkBWARef ${expe_type}
+    checkChromSize ${expe_type}
+    ATAC_Input_FILES=$( echo "-1 ${read_1_str} -2 ${read_2_str} -3 ${read_3_str}" )
+    GEX_Input_FILES=$( echo "-1 ${read_4_str} -2 ${read_5_str}" )
+    atac_config="10x_scair-atac-hic_config.json"
+    gex_config="10x_scair-rna_config.json"
+    checkChromSize ${expe_type}
+    ${barp_dir}/PipelineScript/scair.sh ${name} "${ATAC_Input_FILES}" "${GEX_Input_FILES}" ${thread} ${atac_config} ${gex_config} ${star_ref} ${bwa_ref} ${chrom_size} ${barp_dir} ${self_ligate}
 elif [[ ${expe_type} == "scrna" ]]
 then
     echo -e "\nYou need to be more specific about the experiment to \"scrna_10x_v2\", \"scrna_10_v3\" or \"dropseq\"."
