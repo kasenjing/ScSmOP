@@ -47,7 +47,7 @@ if [[ ! -d RNAResult ]]
 then
     mkdir RNAResult
 fi
-mv 01.BarcodeIden 02.ReadAlign 04.QualityAssess *.done RNAResult
+mv -f 01.BarcodeIden 02.ReadAlign 04.QualityAssess *.done RNAResult
 
 ${BARP_DIR}/PipelineScript/BarcodeIdentification.sh -t scair -n ${LIB_NAME} -p ${BARP_DIR} ${ATAC_FILES} -@ ${THREAD} -c ${ATAC_CONFIG}
 if [[ -f BarcodeIdentification.done ]]
@@ -71,4 +71,4 @@ if [[ ! -d DNAResult ]]
 then
    mkdir DNAResult
 fi
-mv 01.BarcodeIden 02.ReadAlign 03.GroupAndRefine 04.QualityAssess *.done DNAResult
+mv -f 01.BarcodeIden 02.ReadAlign 03.GroupAndRefine 04.QualityAssess *.done DNAResult

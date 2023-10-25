@@ -332,11 +332,12 @@ then
     mv ${name}.Kneepointbarcodes.tsv ${name}.Kneepointfeatures.tsv ${name}.Kneepointmatrix.mtx filtered
     # ${pipe_dir}/Tools/Rscript ${pipe_dir}/Rscript/PlotCountCell.R  raw/matrix.mtx raw/features.tsv raw/barcodes.tsv filtered/${name}.Kneepointmatrix.mtx filtered/${name}.Kneepointfeatures.tsv filtered/${name}.Kneepointbarcodes.tsv
 	echo -e "Generating coverage..."
-    ${pipe_dir}/Tools/samtools view -F 1024 -@ 16 --tag LT:P --tag LT:S ${name}.Pairs.bam -o ${name}.PS.Dedup.bam
-	${pipe_dir}/Tools/samtools sort -@ 16 ${name}.PS.Dedup.bam -o ${name}.PS.Dedup.Sorted.bam
+    ${pipe_dir}/Tools/samtools view -F 1024 -@ ${num_thread} --tag LT:P --tag LT:S ${name}.Pairs.bam -o ${name}.PS.Dedup.bam
+	${pipe_dir}/Tools/samtools sort -@ ${num_thread} ${name}.PS.Dedup.bam -o ${name}.PS.Dedup.Sorted.bam
 	${pipe_dir}/Tools/samtools index ${name}.PS.Dedup.Sorted.bam
     ${pipe_dir}/Tools/bedtools genomecov -bg -ibam ${name}.PS.Dedup.Sorted.bam > ${name}.PS.Dedup.bedgraph
-    java -jar /mnt/f/scChIA/ScSmOP/ScSmOP/Tools/juicer_tools_1.19.01.jar pre ${name}.Dedup.Pairs.Sorted.gz ${name}.Dedup.Pairs.hic ${genomesize}
+    java -jar ${pipe_dir}/Tools/juicer_tools_1.19.01.jar pre ${name}.Dedup.Pairs.Sorted.gz ${name}.Dedup.Pairs.hic ${genomesize}
+    ${pipe_dir}/Tools/python3 ${pipe_dir}/PythonScript/PickUpAtacBarcode.py -a ../RNAResult/01.BarcodeIden/${name}.CELL.idb -b ../01.BarcodeIden/${name}.CELL.idb -o ${name}.RNA.DNA
     if [[ $? != 0 ]]
     then
         FinishSuccess=0
