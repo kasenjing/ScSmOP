@@ -71,4 +71,4 @@ if [[ ! -d DNAResult ]]
 then
    mkdir DNAResult
 fi
-mv 01.BarcodeIden 02.ReadAlign 04.QualityAssess *.done RNAResult
+mv 01.BarcodeIden 02.ReadAlign 03.GroupAndRefine 04.QualityAssess *.done DNAResult

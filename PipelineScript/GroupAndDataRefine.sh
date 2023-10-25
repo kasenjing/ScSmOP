@@ -180,7 +180,7 @@ then
     awk '{OFS="\t"; print $1,$2,$3,$4}' ${name}.ChIADrop.SubGEM.Clean.FragLen.stat > ${name}.rgn
     awk '{OFS="\t"; print $1,$2,$3,$4,$5,$6,$9,$7}' ${name}.ChIADrop.SubGEM.Clean.L2L.stat > ${name}.loop
     sort -k2 -k6 ${name}.ChIADrop.SubGEM.Clean.juice > ${name}.ChIADrop.SubGEM.Clean.sorted.juice
-    if [[ ${genomesize} =~ ${pipe_dir} ]] 
+    if [[ -f ${genomesize} ]] 
     then
         tgenome=${genomesize}
     else
@@ -212,7 +212,7 @@ then
     echo -e "Sorting bed."
     sort -k1,1 -k2,2n ${name}.Qualified.bed > ${name}.Qualified.Sorted.bed
     echo -e "Generating coverage"
-    if [[ ${genomesize} =~ ${pipe_dir} ]] 
+    if [[ -f ${genomesize} ]] 
     then
         tgenome=${genomesize}
     else
@@ -279,7 +279,7 @@ then
     echo -e "Sorting bed."
     sort -k1,1 -k2,2n ${name}.Qualified.bed > ${name}.Qualified.Sorted.bed
     echo -e "Generating coverage"
-    if [[ ${genomesize} =~ ${pipe_dir} ]] 
+    if [[ -f ${genomesize} ]] 
     then
         tgenome=${genomesize}
     else
